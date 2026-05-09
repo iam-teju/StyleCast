@@ -1001,11 +1001,8 @@
         const preview = document.getElementById(previewId);
         const file = input.files[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.addEventListener("load", () => {
-            preview.innerHTML = `<img src="${reader.result}" alt="Preview">`;
-        });
-        reader.readAsDataURL(file);
+        const url = URL.createObjectURL(file);
+        preview.innerHTML = `<img src="${url}" alt="Preview">`;
     }
 
     const range = document.getElementById('alphaRange');
