@@ -1,0 +1,13 @@
+# Large datasets - don't upload
+content_dataset/
+style_dataset/
+
+# Experiment checkpoints
+experiment/
+
+# VS Code
+.vscode/
+
+# Python cache
+__pycache__/
+*.pyc

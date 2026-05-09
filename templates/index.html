@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StyleCast — Neural Style Transfer | Tejas M</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        :root {
+            --bg-primary: #050505;
+            --bg-secondary: #0d0d0d;
+            --bg-card: rgba(18, 18, 18, 0.85);
+            --accent: #e8a838;
+            --accent-dim: rgba(232, 168, 56, 0.15);
+            --accent-glow: rgba(232, 168, 56, 0.4);
+            --text-primary: #f0ece4;
+            --text-secondary: #8a857d;
+            --text-muted: #5a5650;
+            --border: rgba(255, 255, 255, 0.06);
+            --border-hover: rgba(232, 168, 56, 0.25);
+            --radius: 16px;
+            --radius-sm: 10px;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* ═══ NAVBAR ═══ */
+        .navbar {
+            background: rgba(5, 5, 5, 0.85);
+            backdrop-filter: blur(20px) saturate(1.2);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 0;
+            z-index: 100;
+        }
+        .navbar-brand {
+            font-family: 'Syne', sans-serif;
+            font-weight: 800;
+            font-size: 1.35rem;
+            color: var(--text-primary) !important;
+            letter-spacing: -0.02em;
+        }
+        .navbar-brand span { color: var(--accent); }
+        .nav-link {
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-secondary) !important;
+            font-weight: 400;
+            font-size: 0.9rem;
+            letter-spacing: 0.03em;
+            margin-left: 0.5rem;
+            padding: 0.5rem 1rem !important;
+            transition: color 0.3s;
+        }
+        .nav-link:hover { color: var(--accent) !important; }
+        .nav-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary) !important;
+            border-radius: 100px;
+            padding: 0.4rem 1.25rem !important;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+        .nav-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent) !important;
+        }
+
+        /* ═══ HERO ═══ */
+        .hero {
+            padding: 10rem 0 4rem;
+            text-align: center;
+            position: relative;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--accent-dim) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .hero-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 1.2rem;
+            background: var(--accent-dim);
+            border: 1px solid rgba(232, 168, 56, 0.2);
+            border-radius: 100px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--accent);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+        .hero-label .dot {
+            width: 6px;
+            height: 6px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: pulse-dot 2s infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .hero h1 {
+            font-family: 'Syne', sans-serif;
+            font-weight: 800;
+            font-size: clamp(3rem, 7vw, 5.5rem);
+            line-height: 1.05;
+            letter-spacing: -0.04em;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+        .hero h1 em {
+            font-style: italic;
+            color: var(--accent);
+        }
+        .hero-sub {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            max-width: 520px;
+            margin: 0 auto 1rem;
+            line-height: 1.7;
+            font-weight: 300;
+            position: relative;
+            z-index: 1;
+        }
+        .hero-credit {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ═══ UPLOAD ═══ */
+        .upload-section { padding: 2rem 0 4rem; }
+        .upload-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            transition: border-color 0.4s, box-shadow 0.4s;
+        }
+        .upload-card:hover {
+            border-color: var(--border-hover);
+            box-shadow: 0 0 60px -20px var(--accent-glow);
+        }
+        .upload-card-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .upload-card-header .icon-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+        }
+        .upload-card-header span {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-secondary);
+        }
+        .upload-card-body { padding: 1.5rem; }
+        .preview-zone {
+            width: 100%;
+            height: 320px;
+            background: var(--bg-secondary);
+            border: 1.5px dashed rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            overflow: hidden;
+            transition: border-color 0.3s;
+        }
+        .preview-zone:hover { border-color: rgba(255, 255, 255, 0.15); }
+        .preview-zone .placeholder-text {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .preview-zone .placeholder-text i { font-size: 1.8rem; opacity: 0.5; }
+        .preview-zone img { width: 100%; height: 100%; object-fit: contain; }
+        .file-input-wrap .form-control {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            padding: 0.6rem 0.8rem;
+        }
+        .file-input-wrap .form-control:focus {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+            color: var(--text-primary);
+        }
+        .file-input-wrap .form-control::file-selector-button {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-secondary);
+            border: none;
+            border-right: 1px solid var(--border);
+            padding: 0.375rem 1rem;
+            margin-right: 1rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+        .file-input-wrap .form-control::file-selector-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* ═══ CONTROLS ═══ */
+        .controls-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 2.5rem 3rem;
+        }
+        .slider-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .slider-value {
+            background: var(--accent-dim);
+            color: var(--accent);
+            padding: 0.2rem 0.75rem;
+            border-radius: 100px;
+            font-weight: 500;
+        }
+        #alphaRange {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 100px;
+            outline: none;
+        }
+        #alphaRange::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            box-shadow: 0 0 20px var(--accent-glow);
+            transition: transform 0.2s;
+        }
+        #alphaRange::-webkit-slider-thumb:hover { transform: scale(1.2); }
+        .slider-endpoints {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.5rem;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* ═══ BUTTON ═══ */
+        .btn-transfer {
+            background: var(--accent);
+            color: #050505;
+            border: none;
+            padding: 1rem 3.5rem;
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            letter-spacing: 0.04em;
+            border-radius: 100px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-transfer::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.15), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s;
+        }
+        .btn-transfer:hover {
+            background: #f0b44a;
+            box-shadow: 0 8px 40px -8px var(--accent-glow);
+            transform: translateY(-2px);
+            color: #050505;
+        }
+        .btn-transfer:hover::before { transform: translateX(100%); }
+
+        /* ═══ RESULT ═══ */
+        .result-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(52, 211, 153, 0.2);
+            border-radius: var(--radius);
+            overflow: hidden;
+            animation: resultSlideIn 0.6s ease-out;
+        }
+        @keyframes resultSlideIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .result-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(52, 211, 153, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .result-header .dot {
+            width: 8px;
+            height: 8px;
+            background: #34d399;
+            border-radius: 50%;
+            animation: pulse-dot 2s infinite;
+        }
+        .result-header span {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #34d399;
+        }
+        .result-card img { width: 100%; display: block; }
+        .result-footer { padding: 1.25rem 1.5rem; text-align: center; }
+        .btn-download {
+            background: transparent;
+            border: 1px solid rgba(52, 211, 153, 0.3);
+            color: #34d399;
+            padding: 0.6rem 2rem;
+            border-radius: 100px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+        .btn-download:hover {
+            background: rgba(52, 211, 153, 0.1);
+            border-color: #34d399;
+            color: #34d399;
+        }
+
+        /* ═══ ERROR ═══ */
+        .error-alert {
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: var(--radius-sm);
+            padding: 1rem 1.5rem;
+            color: #fca5a5;
+            font-size: 0.9rem;
+        }
+
+        /* ═══ HOW IT WORKS ═══ */
+        .how-section { padding: 5rem 0; }
+        .section-title {
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: 2rem;
+            letter-spacing: -0.03em;
+            margin-bottom: 0.75rem;
+        }
+        .section-subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            font-weight: 300;
+            margin-bottom: 3.5rem;
+        }
+        .step-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 2rem 1.75rem;
+            height: 100%;
+            transition: border-color 0.3s, transform 0.3s;
+        }
+        .step-card:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-4px);
+        }
+        .step-num {
+            font-family: 'Syne', sans-serif;
+            font-weight: 800;
+            font-size: 2.5rem;
+            color: var(--accent);
+            opacity: 0.3;
+            line-height: 1;
+            margin-bottom: 1rem;
+        }
+        .step-card h4 {
+            font-family: 'Syne', sans-serif;
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.75rem;
+        }
+        .step-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.7;
+            margin: 0;
+        }
+
+        /* ═══ TECH STRIP ═══ */
+        .tech-strip {
+            padding: 3rem 0;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+        .tech-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1.25rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            letter-spacing: 0.03em;
+        }
+        .tech-badge i { color: var(--accent); font-size: 0.85rem; }
+
+        /* ═══ EXAMPLES ═══ */
+        .examples-section { padding: 3rem 0 5rem; }
+        .example-row {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: border-color 0.3s;
+        }
+        .example-row:hover { border-color: var(--border-hover); }
+        .example-col { flex: 1; text-align: center; }
+        .example-col-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 0.6rem;
+        }
+        .example-col img {
+            width: 100%;
+            height: 200px;
+            object-fit: contain;
+            border-radius: var(--radius-sm);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+        }
+        .example-arrow {
+            color: var(--accent);
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        @media (max-width: 767.98px) {
+            .example-row { flex-direction: column; }
+            .example-arrow { transform: rotate(90deg); }
+            .controls-card { padding: 2rem 1.5rem; }
+        }
+
+        /* ═══ FAQ ═══ */
+        .faq-section { padding: 0 0 5rem; }
+        .faq-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            margin-bottom: 0.75rem;
+            overflow: hidden;
+        }
+        .faq-item .accordion-button {
+            background: transparent;
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            font-weight: 500;
+            font-size: 0.95rem;
+            padding: 1.15rem 1.5rem;
+            box-shadow: none;
+        }
+        .faq-item .accordion-button::after { filter: invert(0.6); }
+        .faq-item .accordion-button:not(.collapsed) {
+            background: rgba(232, 168, 56, 0.05);
+            color: var(--accent);
+        }
+        .faq-item .accordion-button:focus { box-shadow: none; }
+        .faq-item .accordion-body {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.7;
+            padding: 0 1.5rem 1.25rem;
+        }
+
+        /* ═══ FOOTER ═══ */
+        .site-footer {
+            padding: 4rem 0 2rem;
+            border-top: 1px solid var(--border);
+        }
+        .footer-brand {
+            font-family: 'Syne', sans-serif;
+            font-weight: 800;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+        .footer-brand span { color: var(--accent); }
+        .footer-text {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            line-height: 1.7;
+            max-width: 320px;
+        }
+        .footer-heading {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--text-muted);
+            margin-bottom: 1.25rem;
+        }
+        .footer-link {
+            display: block;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 0.6rem;
+            transition: color 0.3s;
+        }
+        .footer-link:hover { color: var(--accent); }
+        .footer-social {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            color: var(--text-secondary);
+            text-decoration: none;
+            margin-right: 0.5rem;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+        .footer-social:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-dim);
+        }
+        .footer-bottom {
+            border-top: 1px solid var(--border);
+            padding-top: 1.5rem;
+            margin-top: 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .footer-bottom p {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* ═══ LOADER ═══ */
+        .loader-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(5, 5, 5, 0.92);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 1.5rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .loader-overlay.active { opacity: 1; pointer-events: all; }
+        .loader-ring {
+            width: 56px;
+            height: 56px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loader-overlay p {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            letter-spacing: 0.08em;
+        }
+
+        .preview-zone img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* ═══ REVEAL ═══ */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
+
+        /* ═══ SCROLLBAR ═══ */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg fixed-top">
+    <div class="container">
+        <a class="navbar-brand" href="#">Style<span>Cast</span></a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" style="border-color: var(--border); filter: invert(0.7);">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link" href="#upload">Transfer</a></li>
+                <li class="nav-item"><a class="nav-link" href="#how">How It Works</a></li>
+                <li class="nav-item"><a class="nav-link" href="#examples">Examples</a></li>
+                <li class="nav-item"><a class="nav-link" href="#faq">FAQ</a></li>
+            </ul>
+            <a href="#" class="nav-link nav-btn ms-lg-3" target="_blank"><i class="fab fa-github me-1"></i> Source</a>
+        </div>
+    </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+    <div class="container">
+        <div class="hero-label"><span class="dot"></span> Adaptive Instance Normalization</div>
+        <h1>Turn any photo<br>into <em>art.</em></h1>
+        <p class="hero-sub">Upload a content image and a style painting. The neural network transfers the artistic style in real-time using AdaIN.</p>
+        <p class="hero-credit">Built by Tejas M &middot; PyTorch &middot; Flask</p>
+    </div>
+</section>
+
+<!-- Upload -->
+<section class="upload-section" id="upload">
+    <div class="container">
+        <form method="post" enctype="multipart/form-data" id="uploadForm">
+            {{ form.hidden_tag() }}
+            {{ form.content_path() }}
+            {{ form.style_path() }}
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="upload-card">
+                        <div class="upload-card-header">
+                            <div class="icon-dot"></div>
+                            <span>Content Source</span>
+                        </div>
+                        <div class="upload-card-body">
+                            <div class="preview-zone" id="contentPreview">
+                                {% if content_image %}
+                                    <img src="{{ url_for('send_image', filename=content_image) }}" alt="Content">
+                                {% else %}
+                                    <div class="placeholder-text">
+                                        <i class="fas fa-image"></i>
+                                        <span>Select content image</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="file-input-wrap">
+                                {{ form.content(class="form-control", onchange="previewFile(this, 'contentPreview')") }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="upload-card">
+                        <div class="upload-card-header">
+                            <div class="icon-dot"></div>
+                            <span>Style Reference</span>
+                        </div>
+                        <div class="upload-card-body">
+                            <div class="preview-zone" id="stylePreview">
+                                {% if style_image %}
+                                    <img src="{{ url_for('send_image', filename=style_image) }}" alt="Style">
+                                {% else %}
+                                    <div class="placeholder-text">
+                                        <i class="fas fa-palette"></i>
+                                        <span>Select style painting</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="file-input-wrap">
+                                {{ form.style(class="form-control", onchange="previewFile(this, 'stylePreview')") }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row justify-content-center mt-4">
+                <div class="col-lg-8">
+                    <div class="controls-card">
+                        <div class="slider-label">
+                            <span>Style Strength</span>
+                            <span class="slider-value" id="rangeValue">1.0</span>
+                        </div>
+                        {{ form.alpha(class="form-control-range", id="alphaRange", type="range", min="0", max="1", step="0.1") }}
+                        <div class="slider-endpoints">
+                            <span>Preserve Content</span>
+                            <span>Full Style</span>
+                        </div>
+                        <div class="text-center mt-4 pt-2">
+                            {{ form.submit(class="btn-transfer") }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        {% if result_image %}
+        <div class="row justify-content-center mt-5" id="resultSection">
+            <div class="col-lg-8">
+                <div class="result-card">
+                    <div class="result-header">
+                        <span class="dot"></span>
+                        <span>Output Ready</span>
+                    </div>
+                    <img src="{{ url_for('send_image', filename=result_image) }}" alt="Stylized Result">
+                    <div class="result-footer">
+                        <a href="{{ url_for('send_image', filename=result_image) }}" download class="btn-download">
+                            <i class="fas fa-download me-2"></i>Download Result
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if error %}
+        <div class="row justify-content-center mt-4">
+            <div class="col-lg-8">
+                <div class="error-alert"><i class="fas fa-exclamation-circle me-2"></i>{{ error }}</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- How It Works -->
+<section class="how-section" id="how">
+    <div class="container">
+        <div class="text-center reveal">
+            <h2 class="section-title">How It Works</h2>
+            <p class="section-subtitle">Three-step pipeline powered by Adaptive Instance Normalization</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4 reveal">
+                <div class="step-card">
+                    <div class="step-num">01</div>
+                    <h4>Encode</h4>
+                    <p>Both images pass through a pre-trained VGG-19 encoder that extracts deep feature representations — capturing structure from the content and texture patterns from the style.</p>
+                </div>
+            </div>
+            <div class="col-md-4 reveal">
+                <div class="step-card">
+                    <div class="step-num">02</div>
+                    <h4>AdaIN Transfer</h4>
+                    <p>The content features are normalized to match the mean and variance of the style features. This single operation aligns the statistical distribution — transferring style in feature space.</p>
+                </div>
+            </div>
+            <div class="col-md-4 reveal">
+                <div class="step-card">
+                    <div class="step-num">03</div>
+                    <h4>Decode</h4>
+                    <p>A trained decoder network inverts the AdaIN output back to pixel space, producing the final stylized image. The alpha slider controls how much style is blended in.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Tech Strip -->
+<div class="tech-strip">
+    <div class="container">
+        <div class="d-flex flex-wrap justify-content-center gap-3">
+            <span class="tech-badge"><i class="fab fa-python"></i> Python</span>
+            <span class="tech-badge"><i class="fas fa-fire"></i> PyTorch</span>
+            <span class="tech-badge"><i class="fas fa-flask"></i> Flask</span>
+            <span class="tech-badge"><i class="fas fa-brain"></i> VGG-19</span>
+            <span class="tech-badge"><i class="fas fa-database"></i> MS-COCO</span>
+            <span class="tech-badge"><i class="fas fa-palette"></i> WikiArt</span>
+        </div>
+    </div>
+</div>
+
+<!-- Examples -->
+<section class="examples-section" id="examples">
+    <div class="container">
+        <div class="text-center reveal">
+            <h2 class="section-title">Examples</h2>
+            <p class="section-subtitle">Content + Style → Stylized Output</p>
+        </div>
+        <div class="example-row reveal">
+            <div class="example-col">
+                <div class="example-col-label">Content</div>
+                <img src="{{ url_for('send_example', filename='brad_pitt.jpg') }}" alt="Content">
+            </div>
+            <div class="example-col">
+                <div class="example-col-label">Style</div>
+                <img src="{{ url_for('send_example', filename='sketch.png') }}" alt="Style">
+            </div>
+            <div class="example-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="example-col">
+                <div class="example-col-label">Output</div>
+                <img src="{{ url_for('send_example', filename='stylized_brad_pitt.jpg') }}" alt="Output">
+            </div>
+        </div>
+        <div class="example-row reveal">
+            <div class="example-col">
+                <div class="example-col-label">Content</div>
+                <img src="{{ url_for('send_example', filename='brad_pitt.jpg') }}" alt="Content">
+            </div>
+            <div class="example-col">
+                <div class="example-col-label">Style</div>
+                <img src="{{ url_for('send_example', filename='picasso_seated_nude_hr.jpg') }}" alt="Style">
+            </div>
+            <div class="example-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="example-col">
+                <div class="example-col-label">Output</div>
+                <img src="{{ url_for('send_example', filename='stylized_brad_pitt (1).jpg') }}" alt="Output">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq-section" id="faq">
+    <div class="container">
+        <div class="text-center reveal">
+            <h2 class="section-title">FAQ</h2>
+            <p class="section-subtitle">Common questions about this project</p>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="accordion" id="faqAccordion">
+                    <div class="faq-item reveal">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">Is this a pretrained model?</button>
+                        </h2>
+                        <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">No. I trained the decoder from scratch using PyTorch on ~40,000 content images (MS-COCO) and ~8,000 style images (WikiArt). The encoder uses pre-trained VGG-19 weights, but the style transfer decoder is entirely custom-trained in two phases — 160 epochs at 256px, then 100 epochs at 512px.</div>
+                        </div>
+                    </div>
+                    <div class="faq-item reveal">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">Is it free to use?</button>
+                        </h2>
+                        <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">Yes — this is a personal portfolio project and completely free to use. Upload any content and style image pair.</div>
+                        </div>
+                    </div>
+                    <div class="faq-item reveal">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">What styles work best?</button>
+                        </h2>
+                        <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">Almost any painting style works — impressionist, cubist, abstract, watercolor, sketch, ukiyo-e, and more. Bold, high-contrast styles tend to produce the most striking results.</div>
+                        </div>
+                    </div>
+                    <div class="faq-item reveal">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">What's the tech stack?</button>
+                        </h2>
+                        <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">Python, PyTorch (VGG-19 encoder + custom decoder), Flask for the web backend, and the AdaIN algorithm from Huang & Belongie (ICCV 2017).</div>
+                        </div>
+                    </div>
+                    <div class="faq-item reveal">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">What does the style strength slider do?</button>
+                        </h2>
+                        <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">It controls the alpha parameter (0–1). At 0 you get the original content; at 1 the style is fully applied. In-between values blend both, letting you fine-tune the artistic effect.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="site-footer">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-4 col-md-6">
+                <div class="footer-brand">Style<span>Cast</span></div>
+                <p class="footer-text">Neural Style Transfer powered by Adaptive Instance Normalization. A portfolio project by Tejas M.</p>
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <div class="footer-heading">Navigation</div>
+                <a href="#upload" class="footer-link">Transfer</a>
+                <a href="#how" class="footer-link">How It Works</a>
+                <a href="#examples" class="footer-link">Examples</a>
+                <a href="#faq" class="footer-link">FAQ</a>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="footer-heading">Project</div>
+                <a href="#" class="footer-link"><i class="fas fa-microchip me-2"></i>PyTorch + Flask</a>
+                <a href="#" class="footer-link"><i class="fas fa-database me-2"></i>MS-COCO & WikiArt</a>
+                <a href="#" class="footer-link"><i class="fas fa-file-alt me-2"></i>Huang & Belongie, ICCV 2017</a>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="footer-heading">Built by Tejas M</div>
+                <p class="footer-text mb-3">AI Engineer & Product Builder. Building AI-powered tools and experiences.</p>
+                <div>
+                    <a href="https://www.linkedin.com/in/iamteju/" class="footer-social" target="_blank"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="https://github.com/iam-teju" class="footer-social" target="_blank"><i class="fab fa-github"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 Tejas M. All rights reserved.</p>
+            <p>Built with PyTorch &middot; Flask &middot; AdaIN</p>
+        </div>
+    </div>
+</footer>
+
+<div class="loader-overlay" id="loader">
+    <div class="loader-ring"></div>
+    <p>Transferring style...</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function previewFile(input, previewId) {
+        const preview = document.getElementById(previewId);
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.addEventListener("load", () => {
+            preview.innerHTML = `<img src="${reader.result}" alt="Preview">`;
+        });
+        reader.readAsDataURL(file);
+    }
+
+    const range = document.getElementById('alphaRange');
+    const rangeValue = document.getElementById('rangeValue');
+    if (range) {
+        function updateSlider() {
+            rangeValue.textContent = parseFloat(range.value).toFixed(1);
+            const pct = ((range.value - range.min) / (range.max - range.min)) * 100;
+            range.style.background = `linear-gradient(to right, var(--accent) 0%, var(--accent) ${pct}%, rgba(255,255,255,0.06) ${pct}%)`;
+        }
+        range.addEventListener('input', updateSlider);
+        updateSlider();
+    }
+
+    window.addEventListener('load', () => {
+        const result = document.getElementById('resultSection');
+        if (result) result.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry, i) => {
+            if (entry.isIntersecting) {
+                setTimeout(() => entry.target.classList.add('visible'), i * 80);
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+        a.addEventListener('click', e => {
+            e.preventDefault();
+            const target = document.querySelector(a.getAttribute('href'));
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+
+    const form = document.getElementById('uploadForm');
+    if (form) {
+        form.addEventListener('submit', () => {
+            document.getElementById('loader').classList.add('active');
+        });
+    }
+</script>
+</body>
+</html>
