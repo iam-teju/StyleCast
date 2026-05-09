@@ -17,6 +17,7 @@ from utils.utils import adaptive_instance_normalization, calc_mean_std
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'supersecretkey'
+app.config['WTF_CSRF_ENABLED'] = False
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg'}
 Bootstrap(app)
